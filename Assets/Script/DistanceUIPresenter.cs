@@ -11,6 +11,7 @@ public class DistanceUIPresenter : MonoBehaviour
 
     public void SetDistanceTextAsFloat(float value)
     {
+
         if(value > 0)
         {
             this.DistanceUIText.text = "Distance :" + value.ToString("F2") + "m";

@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -26,12 +27,15 @@ public partial class GameMainLogicHandler : MonoBehaviour
     [SerializeField]
     private float Distance;
 
-    [SerializeField]
-    private bool networkFlag;
+    [FormerlySerializedAs("isScoreFlaged")] [FormerlySerializedAs("networkFlag")] [SerializeField]
+    private bool isScoreFlagable;
 
+    private float DefaultFlagDistance = 15f;
+    
     private void Start()
     {
-        this.networkFlag = true;
+        this.isScoreFlagable = true;
+        //NetClient.instance.RequestBestScore();
         carController.SetCarMoveEvent(this.UpdateDistance);
     }
 
@@ -42,26 +46,20 @@ public partial class GameMainLogicHandler : MonoBehaviour
 
     private void UpdateNetWork()
     {
-        if (!networkFlag)
+        if (!isScoreFlagable)
             return;
 
         if(this.carController.isCarMoving && this.carController.currentMovementSpeed <= 0.0001)
         {
+            Debug.Log("자동차가 멈췄다!");
             UpdateDistance();
-            float Distance = this.Distance;
-
-            Socket clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-
-            byte[] buf = Encoding.UTF8.GetBytes(Distance.ToString());
-            EndPoint serverEP = new IPEndPoint(IPAddress.Loopback, 12345);
-
-            clientSocket.SendTo(buf, serverEP);
-
-            byte[] recvBytes = new byte[1024];
-            int nRecv = clientSocket.ReceiveFrom(recvBytes, ref serverEP);
-            string txt = Encoding.UTF8.GetString(recvBytes, 0, nRecv);
-            Debug.Log(txt);
-            networkFlag = false;
+            if (Distance > 0)
+            {
+                NetClient.instance.AddDistanceToServer(DefaultFlagDistance - Distance);
+            }
+            
+            NetClient.instance.SendHighestScoreToServer(Distance);
+            isScoreFlagable = false;
         }
     }
 
@@ -70,6 +68,7 @@ public partial class GameMainLogicHandler : MonoBehaviour
     {
         Distance = flagObject.transform.position.x - carController.transform.position.x;
         distanceUIPresenter.SetDistanceTextAsFloat(Distance);
+        
     }
 
 }
